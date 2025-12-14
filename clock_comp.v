@@ -23,7 +23,7 @@ module seconds_counter (
   end
 //======= continuous assignments =======
   assign c         = count == 8'd59;
-  assign carry_out = (c & en) | rst;
+  assign carry_out = (c & en);
   assign seconds   = count;
 endmodule
 //=================== limited couunter ===================
@@ -51,6 +51,6 @@ always @(posedge clk or posedge rst) begin
 end
 //======= continuous assignments =======
   assign c         = (count == LIMIT);
-  assign carry_out = (c & sel) |rst;
+  assign carry_out = (c & sel);
   assign dout      = count;
 endmodule
