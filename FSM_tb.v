@@ -36,8 +36,7 @@ module tb ();
   reg  [3:0] sws_t_exp =0, sws_u_exp =0, swm_t_exp =0, swm_u_exp =0;     // time
   reg  [3:0] ah_t_exp =0, ah_u_exp =0, am_t_exp =0, am_u_exp =0;     // alarm
   reg  [7:0] set_mm_exp, set_hh_exp;
-  reg  [1:0] state_out_exp;
-  reg  [1:0]    count=0;
+  reg  [1:0] count=0;
   integer    correct_count=0 , error_count=0;
 //======== clock generation ========
 initial begin
@@ -89,16 +88,18 @@ initial begin
   wait_cycles(300);
 //------------ scenario 2: set time --------------// 
 // time is 00:05
-  //we will enter the set time mode and set the time to 12:30
+  //we will enter the set time mode and set the time to 22:30
   assert_mode();    // enter set time mode (now we are setting the minutes)
-  assert_set();   // set the hrs_t to 1
+  repeat(5) begin // set the hrs_u to 5%3 = 2
+    assert_set();
+  end
   assert_mode();
-  repeat(2) begin // set the hrs_u to 2
+  repeat(7) begin // set the hrs_u to 7%5=2
     assert_set();
   end
   // going to set the minutes now
   assert_mode();    // move to set minutes_t
-  repeat (3) begin
+  repeat (13) begin   // 13%10 = 3
     assert_set();   // set the minutes to 30
   end
   assert_mode();    // move to set minutes_u
@@ -107,16 +108,19 @@ initial begin
   end
 //------------ scenario 3: setting_alarm operation --------------//
 // time is 12:30 , alarm is 00:00
-// we need to set the alarm to 06:45
+// we need to set the alarm to 23:45
   assert_mode();    // enter set time mode (now we are setting the minutes)
  // set the hrs_t to 0 (aleardy done)
+  repeat(5) begin // set the hrs_t to 4%2
+    assert_set();
+  end
   assert_mode();
-  repeat(6) begin // set the hrs_u to 6
+  repeat(7) begin // set the hrs_u to (4+3) % 3
     assert_set();
   end
   // going to set the minutes now
   assert_mode();    // move to set minutes_t
-  repeat (4) begin
+  repeat (11) begin
     assert_set();   // set the minutes to 4
   end
   assert_mode();    // move to set minutes_u
@@ -132,6 +136,9 @@ initial begin
   assert_set();   // split the stopwatch
   wait_cycles(15);
   assert_set();   // stop the stopwatch
+  wait_cycles(5);
+  assert_set();   // return to the stopwatch
+  wait_cycles(20);
   assert_mode();  // return to normal
 //------------------- end of simulation ------------------//
 $display ("======================================= END OF SIMULATION ======================================");
@@ -207,81 +214,6 @@ task golden_model();
     if (rst) begin
       state = NORMAL;
     end
-    //========================== state outputs ============================\\
-      case (state)
-        //normal operation displays the time so we want the clock to operate normally
-        NORMAL: begin
-          en_sec_normal_exp = 1;
-          en_sec_sw_exp     = 0;
-          save_split_exp    = 0;
-          sel_hr_exp        = 1;
-          sel_min_exp       = 1;
-          sel_hr_sw_exp     = 0;
-          sel_min_sw_exp    = 0;
-          clock();
-        end
-        // we need to stop the clock and begin setting the time
-        SET_TIME: begin
-          en_sec_normal_exp = 0;
-          en_sec_sw_exp     = 0;
-          sel_min_exp       = 0;
-          sel_hr_exp        = 0;
-          sel_hr_sw_exp     = 0;
-          sel_min_sw_exp    = 0;
-          if (count == 0 && set) begin
-            hh_t_exp = (hh_t_exp +1) % 3 ;
-          end else if (count == 1 && set) begin
-            hh_u_exp = (hh_t_exp ==2) ? (hh_u_exp +1)%4 : (hh_u_exp +1)%10 ;
-          end else if (count == 2 && set) begin
-            mm_t_exp = (mm_t_exp +1)%6 ;
-          end else if (count == 3 && set) begin
-            mm_u_exp = (mm_u_exp + 1)%10 ;
-          end
-        end
-        SET_ALARM: begin   //check the mode condition later depends on the design specs (alarm operation)
-          en_sec_normal_exp = 1;
-          en_sec_sw_exp     = 0;
-          sel_min_exp       = 1;
-          sel_hr_exp        = 1;
-          sel_hr_sw_exp     = 0;
-          sel_min_sw_exp    = 0;
-          clock();
-          if (count == 0 && set) begin
-            ah_t_exp = (ah_t_exp +1) % 3 ;
-          end else if (count == 1 && set) begin
-            ah_u_exp = (ah_t_exp ==2) ? (ah_u_exp +1)%4 : (ah_u_exp +1)%10 ;
-          end else if (count == 2 && set) begin
-            am_t_exp = (am_t_exp +1)%6 ;
-          end else if (count == 3 && set) begin
-            am_u_exp = (am_u_exp + 1)%10 ;
-          end
-        end
-        STOP_WATCH: begin
-          en_sec_normal_exp = 1;
-          en_sec_sw_exp     = 1;
-          sel_min_exp       = 1;
-          sel_hr_exp        = 1;
-          clock();
-          if (count == 0) begin
-            sel_hr_sw_exp     = 0;
-            sel_min_sw_exp    = 0;
-          end else if (count == 1) begin
-            sel_hr_sw_exp     = 1;
-            sel_min_sw_exp    = 1;
-            stopwatch();
-          end else if (count == 2) begin
-            sel_hr_sw_exp     = 1;
-            sel_min_sw_exp    = 1;
-            save_split_exp    = 1;
-            stopwatch();
-          end
-          else if (count == 3) begin
-            sel_hr_sw_exp     = 0;
-            sel_min_sw_exp    = 0;
-            save_split_exp    = 0;
-          end
-        end
-      endcase
     //========================== state transition ============================\\
     case (state)
       NORMAL: begin
@@ -326,6 +258,81 @@ task golden_model();
         end
       end
     endcase
+    //========================== state outputs ============================\\
+      case (state)
+        //normal operation displays the time so we want the clock to operate normally
+        NORMAL: begin
+          en_sec_normal_exp = 1;
+          en_sec_sw_exp     = 0;
+          save_split_exp    = 0;
+          sel_hr_exp        = 1;
+          sel_min_exp       = 1;
+          sel_hr_sw_exp     = 0;
+          sel_min_sw_exp    = 0;
+          clock();
+        end
+        // we need to stop the clock and begin setting the time
+        SET_TIME: begin
+          en_sec_normal_exp = 0;
+          en_sec_sw_exp     = 0;
+          sel_min_exp       = 0;
+          sel_hr_exp        = 0;
+          sel_hr_sw_exp     = 0;
+          sel_min_sw_exp    = 0;
+          if (count == 0 && set) begin
+            hh_t_exp = (hh_t_exp +1) % 3 ;
+          end else if (count == 1 && set) begin
+            hh_u_exp = (hh_t_exp ==2)? (hh_u_exp +1)%5 : (hh_u_exp +1)%10 ;
+          end else if (count == 2 && set) begin
+            mm_t_exp = (mm_t_exp +1)%6 ;
+          end else if (count == 3 && set) begin
+            mm_u_exp = (mm_u_exp + 1)%10 ;
+          end
+        end
+        SET_ALARM: begin   //check the mode condition later depends on the design specs (alarm operation)
+          en_sec_normal_exp = 1;
+          en_sec_sw_exp     = 0;
+          sel_min_exp       = 1;
+          sel_hr_exp        = 1;
+          sel_hr_sw_exp     = 0;
+          sel_min_sw_exp    = 0;
+          clock();
+          if (count == 0 && set) begin
+            ah_t_exp = (ah_t_exp +1) % 3 ;
+          end else if (count == 1 && set) begin
+            ah_u_exp = (ah_t_exp ==2) ? (ah_u_exp +1)%4 : (ah_u_exp +1)%10 ;
+          end else if (count == 2 && set) begin
+            am_t_exp = (am_t_exp +1)%6 ;
+          end else if (count == 3 && set) begin
+            am_u_exp = (am_u_exp + 1)%10 ;
+          end
+        end
+        STOP_WATCH: begin
+          en_sec_normal_exp = 1;
+          en_sec_sw_exp     = 1;
+          sel_min_exp       = 1;
+          sel_hr_exp        = 1;
+          clock();
+          if (count == 0) begin
+            sel_hr_sw_exp     = 0;
+            sel_min_sw_exp    = 0;
+          end else if (count == 1) begin
+            sel_hr_sw_exp     = 1;
+            sel_min_sw_exp    = 1;
+            stopwatch();
+          end else if (count == 2) begin
+            sel_hr_sw_exp     = 1;
+            sel_min_sw_exp    = 1;
+            save_split_exp    = 1;
+            stopwatch();
+          end
+          else if (count == 3) begin
+            en_sec_sw_exp     = 0;
+            save_split_exp    = 0;
+          end
+        end
+      endcase
+
   end
 endtask
 //---------------- check outputs -----------------//

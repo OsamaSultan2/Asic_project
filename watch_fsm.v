@@ -41,40 +41,74 @@ localparam SW_RUN        = 2'd1;
 localparam SW_SPLIT      = 2'd2;
 localparam SW_STOP       = 2'd3;
 
-reg digit_sel;         // which digit is selected
+reg [1:0] digit_sel;         // which digit is selected
 reg [1:0] sw_state;    // stopwatch sub-FSM
 reg [1:0] state;       // state FSM
+reg [1:0] ns_state;       // state FSM
 
+//=================state output=================//
+always @(*) begin
+    case (state)
+        NORMAL:begin
+            en_sec_normal = 1;
+            en_sec_sw     = 0;
+            sel_hr     = 1;
+            sel_min    = 1;
+            sel_hr_sw  = 0;
+            sel_min_sw = 0;
+            save_split = 0;
+        end 
+        SET_TIME: begin
+            sel_hr  = 0;
+            sel_min = 0;
+            en_sec_normal = 0;
+            en_sec_sw = 0;
+        end
+        SET_ALARM: begin
+            en_sec_normal = 1;
+            en_sec_sw = 0;
+            sel_hr  = 1;
+            sel_min = 1;
+        end
+        STOPWATCH:begin
+
+            sel_hr  = 1;
+            sel_min = 1;
+            en_sec_normal = 1;
+            en_sec_sw = 1;
+        end
+        default: begin
+            en_sec_normal = 1;
+            en_sec_sw     = 0;
+            sel_hr     = 1;
+            sel_min    = 1;
+            sel_hr_sw  = 0;
+            sel_min_sw = 0;
+            save_split = 0;
+        end
+    endcase
+end
+
+//==============================================//
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         state     <= NORMAL;
         digit_sel <= D_HH_TENS;
         sw_state  <= SW_IDLE;
-        sel_hr    <= 1;
-        sel_min   <= 1;
-        sel_hr_sw  <= 0;
-        sel_min_sw <= 0;
-        save_split <= 0;
+       
     end else begin
         case (state)
 
         /* ================= NORMAL ================= */
         NORMAL: begin
-            en_sec_normal <= 1;
-            en_sec_sw <= 0;
-            sel_min <= 1;
-            sel_hr  <= 1;
             if (mode_btn) begin
                 state   <= SET_TIME;
-                sel_hr  <= 0;
-                sel_min <= 0;
             end
+            else 
+                state   <= NORMAL;
         end
-
         /* ================= SET TIME ================= */
         SET_TIME: begin
-            en_sec_normal <= 0;
-            en_sec_sw <= 0;
             if (mode_btn) begin
                 if (digit_sel == D_MM_UNITS) begin
                     digit_sel <= D_HH_TENS;
@@ -83,13 +117,8 @@ always @(posedge clk or posedge rst) begin
                     digit_sel <= digit_sel + 1'b1;
             end
         end
-
         /* ================= SET ALARM ================= */
         SET_ALARM: begin
-            en_sec_normal <= 1;
-            en_sec_sw <= 0;
-            sel_hr  <= 1;
-            sel_min <= 1;
             if (mode_btn) begin
                 if (digit_sel == D_MM_UNITS) begin
                     digit_sel <= D_HH_TENS;
@@ -102,8 +131,6 @@ always @(posedge clk or posedge rst) begin
 
         /* ================= STOPWATCH ================= */
         STOPWATCH: begin
-            en_sec_normal = 1;
-            en_sec_sw = 1;
             if (mode_btn)
                 state <= NORMAL;
             else if (set_btn) begin
@@ -115,12 +142,11 @@ always @(posedge clk or posedge rst) begin
                 endcase
             end
         end
-
         endcase
     end
 end
 
-
+//================= setting time =================//
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         hh_t <= 0; hh_u <= 0;
@@ -146,17 +172,15 @@ always @(posedge clk or posedge rst) begin
         endcase
     end
 end
-
+//================ alarm ==============================
 always @(posedge clk or posedge rst) begin
     if (rst) begin
         ah_t <= 0; ah_u <= 0;
         am_t <= 0; am_u <= 0;
     end else if (state == SET_ALARM && set_btn) begin
         case (digit_sel)
-
         D_HH_TENS:
             ah_t <= (ah_t == 2) ? 0 : ah_t + 1;
-
         D_HH_UNITS:
             if (ah_t == 2)
                 ah_u <= (ah_u == 3) ? 0 : ah_u + 1;
@@ -172,26 +196,27 @@ always @(posedge clk or posedge rst) begin
         endcase
     end
 end
-
-always @(posedge clk or posedge rst) begin
+//================ stopwatch ==========================
+always @(*) begin
     case(sw_state)
 
         SW_IDLE: begin
-            sel_min_sw <= 0;
-            sel_hr_sw  <= 0;
+            sel_min_sw = 0;
+            sel_hr_sw  = 0;
         end
 
         SW_RUN: begin
-            sel_min_sw <= 1;
-            sel_hr_sw  <= 1;
+            en_sec_sw  = 1;
+            sel_min_sw = 1;
+            sel_hr_sw  = 1;
         end
 
         SW_SPLIT:
-            save_split <= 1;
+            save_split = 1;
 
         SW_STOP: begin
-            save_split <= 0;
-            en_sec_sw  <= 0;
+            save_split = 0;
+            en_sec_sw  = 0;
         end
     endcase
 end

@@ -1,0 +1,19 @@
+read_verilog watch_fsm.v
+hierarchy -check -top watch_fsm
+# read the library
+read_liberty -lib NangateOpenCellLibrary_typical.lib
+# Translate processes to netlists, flatten, and map internal cells
+opt; proc; flatten; techmap; opt; clean
+# Map the abstract DFFs in your code to the actual DFF cells in the library
+dfflibmap -liberty NangateOpenCellLibrary_typical.lib
+
+# Map the remaining combinatorial logic to the library using ABC
+abc -liberty NangateOpenCellLibrary_typical.lib
+techmap -map latch.v
+clean
+
+# Report statistics (gate counts)
+stat 
+
+# Report total area using the library data
+ tee  -o report.txt stat -liberty NangateOpenCellLibrary_typical.lib

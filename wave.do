@@ -5,7 +5,10 @@ add wave -noupdate -expand -group clk/rst -color Yellow /tb/rst
 add wave -noupdate -expand -group inputs /tb/mode
 add wave -noupdate -expand -group inputs /tb/set
 add wave -noupdate /tb/count
+add wave -noupdate /tb/DUT/digit_sel
+add wave -noupdate /tb/DUT/sw_state
 add wave -noupdate /tb/state
+add wave -noupdate /tb/DUT/state
 add wave -noupdate -expand -group outputs /tb/en_sec_normal
 add wave -noupdate -expand -group outputs -color Cyan /tb/en_sec_normal_exp
 add wave -noupdate -expand -group outputs /tb/en_sec_sw
@@ -16,7 +19,6 @@ add wave -noupdate -expand -group outputs /tb/sel_hr
 add wave -noupdate -expand -group outputs -color Cyan /tb/sel_hr_exp
 add wave -noupdate -expand -group outputs /tb/sel_min
 add wave -noupdate -expand -group outputs -color Cyan /tb/sel_min_exp
-add wave -noupdate -expand -group outputs /tb/sel_hr_sw
 add wave -noupdate -expand -group outputs -color Cyan /tb/sel_hr_sw_exp
 add wave -noupdate -expand -group outputs /tb/sel_min_sw
 add wave -noupdate -expand -group outputs -color Cyan /tb/sel_min_sw_exp
@@ -44,13 +46,10 @@ add wave -noupdate -radix unsigned /tb/sws_t_exp
 add wave -noupdate -radix unsigned /tb/sws_u_exp
 add wave -noupdate -radix unsigned /tb/swm_t_exp
 add wave -noupdate -radix unsigned /tb/swm_u_exp
-add wave -noupdate -radix unsigned /tb/set_mm_exp
-add wave -noupdate -radix unsigned /tb/set_hh_exp
-add wave -noupdate -radix unsigned /tb/state_out_exp
 add wave -noupdate /tb/correct_count
 add wave -noupdate /tb/error_count
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {200 ms} 0}
+WaveRestoreCursors {{Cursor 1} {3893500 ms} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 190
 configure wave -valuecolwidth 100
@@ -66,4 +65,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ms
 update
-WaveRestoreZoom {0 ms} {1 sec}
+WaveRestoreZoom {3889500 ms} {3895200 ms}
